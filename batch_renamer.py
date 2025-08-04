@@ -89,3 +89,78 @@ def batch_rename(directory, prefix):
     except Exception as e:
         print(f"Error renaming files: {e}")
         return False
+
+def undo_last_rename():
+    """Undo the most recent rename operation"""
+    global rename_history
+    
+    if not rename_history:
+        print("❌ No rename operations to undo.")
+        return False
+    
+    session = rename_history[-1]
+    return undo_rename_session(len(rename_history) - 1)
+
+def undo_rename_session(session_index):
+    """Undo a specific rename session by index"""
+    global rename_history
+    
+    if session_index < 0 or session_index >= len(rename_history):
+        print(f"❌ Invalid session index: {session_index}")
+        return False
+    
+    session = rename_history[session_index]
+    directory = session['directory']
+    
+    if not os.path.exists(directory):
+        print(f"❌ Directory no longer exists: {directory}")
+        return False
+    
+    print(f"🔄 Undoing rename session from {session['timestamp']}")
+    print(f"📁 Directory: {directory}")
+    print(f"🏷️ Prefix: {session['prefix']}")
+    
+    success_count = 0
+    failed_operations = []
+    
+    # Reverse the operations (undo in reverse order)
+    for operation in reversed(session['operations']):
+        try:
+            old_name = operation['old_name']
+            new_name = operation['new_name']
+            # Current path (what the file is named now)
+            current_path = os.path.join(directory, new_name)
+            # Target path (what we want to rename it back to)
+            target_path = os.path.join(directory, old_name)
+            
+            if not os.path.exists(current_path):
+                print(f"⚠️ File not found: {new_name} (may have been moved or deleted)")
+                failed_operations.append(operation)
+                continue
+            
+            if os.path.exists(target_path) and current_path != target_path:
+                print(f"⚠️ Cannot restore {new_name} -> {old_name} (target exists)")
+                failed_operations.append(operation)
+                continue
+            
+            os.rename(current_path, target_path)
+            print(f"✅ Restored: {new_name} -> {old_name}")
+            success_count += 1
+            
+        except Exception as e:
+            print(f"❌ Error restoring {operation['new_name']}: {e}")
+            failed_operations.append(operation)
+    
+    if success_count > 0:
+        # Remove the session from history if all operations were successful
+        if not failed_operations:
+            rename_history.pop(session_index)
+            save_rename_history()
+            print(f"\n✅ Successfully undid {success_count} rename operations.")
+            print("📝 Session removed from history.")
+        else:
+            print(f"\n⚠️ Partially undid {success_count} operations. {len(failed_operations)} operations failed.")
+    else:
+        print("❌ No operations could be undone.")
+    
+    return success_count > 0
