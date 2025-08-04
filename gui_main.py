@@ -175,3 +175,67 @@ class AutomationSuiteGUI:
         
         # Load initial history
         self.refresh_rename_history()
+        
+    def create_time_tracker_tab(self):
+        # Time Tracker Tab
+        tracker_frame = ttk.Frame(self.notebook)
+        self.notebook.add(tracker_frame, text="⏱️ Time Tracker")
+        
+        ttk.Label(tracker_frame, text="Time Tracking Utilities", 
+                 style='Header.TLabel').pack(pady=10)
+        
+        # Timer display
+        self.time_var = tk.StringVar(value="00:00:00")
+        time_display = ttk.Label(tracker_frame, textvariable=self.time_var, 
+                                font=('Arial', 24, 'bold'))
+        time_display.pack(pady=20)
+        
+        # Timer buttons
+        button_frame = ttk.Frame(tracker_frame)
+        button_frame.pack(pady=20)
+        
+        self.start_btn = ttk.Button(button_frame, text="▶️ Start", 
+                                   style='Custom.TButton',
+                                   command=self.start_timer)
+        self.start_btn.pack(side='left', padx=10)
+        
+        self.stop_btn = ttk.Button(button_frame, text="⏹️ Stop", 
+                                  style='Custom.TButton',
+                                  command=self.stop_timer, state='disabled')
+        self.stop_btn.pack(side='left', padx=10)
+        
+        self.reset_btn = ttk.Button(button_frame, text="🔄 Reset", 
+                                   style='Custom.TButton',
+                                   command=self.reset_timer)
+        self.reset_btn.pack(side='left', padx=10)
+        
+        # Timer log
+        ttk.Label(tracker_frame, text="Timer Log:").pack(pady=(20, 5))
+        self.timer_log = scrolledtext.ScrolledText(tracker_frame, height=10, width=70)
+        self.timer_log.pack(pady=10, padx=20, fill='both', expand=True)
+        
+    def create_system_monitor_tab(self):
+        # System Monitor Tab
+        monitor_frame = ttk.Frame(self.notebook)
+        self.notebook.add(monitor_frame, text="📊 System Monitor")
+        
+        ttk.Label(monitor_frame, text="System Monitoring", 
+                 style='Header.TLabel').pack(pady=10)
+        
+        # Refresh button
+        ttk.Button(monitor_frame, text="🔄 Refresh Stats", 
+                  style='Custom.TButton',
+                  command=self.refresh_system_stats).pack(pady=10)
+        
+        # System stats display
+        self.stats_text = scrolledtext.ScrolledText(monitor_frame, height=15, width=70)
+        self.stats_text.pack(pady=10, padx=20, fill='both', expand=True)
+        
+        # Auto-refresh checkbox
+        self.auto_refresh_var = tk.BooleanVar()
+        ttk.Checkbutton(monitor_frame, text="Auto-refresh every 5 seconds", 
+                       variable=self.auto_refresh_var,
+                       command=self.toggle_auto_refresh).pack(pady=10)
+        
+        # Load initial stats after the interface is ready
+        self.root.after(100, self.refresh_system_stats)
