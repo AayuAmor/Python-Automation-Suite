@@ -448,3 +448,42 @@ class AutomationSuiteGUI:
             
             entry = f"{timestamp} | {prefix} ({num_ops} files)"
             self.history_listbox.insert(tk.END, entry)
+        
+    def start_timer(self):
+        if not self.timer_running:
+            self.timer = time_tracker.TimeTracker()
+            self.timer.start()
+            self.timer_running = True
+            self.start_btn.config(state='disabled')
+            self.stop_btn.config(state='normal')
+            self.update_timer_display()
+            
+    def stop_timer(self):
+        if self.timer_running and self.timer:
+            elapsed = self.timer.stop()
+            self.timer_running = False
+            self.start_btn.config(state='normal')
+            self.stop_btn.config(state='disabled')
+            
+            # Log the session
+            log_entry = f"Session completed: {elapsed:.2f} seconds\n"
+            self.timer_log.insert(tk.END, log_entry)
+            self.timer_log.see(tk.END)
+            
+    def reset_timer(self):
+        self.time_var.set("00:00:00")
+        if self.timer_running:
+            self.stop_timer()
+            
+    def update_timer_display(self):
+        if self.timer_running and self.timer:
+            import time
+            elapsed = time.time() - self.timer.start_time
+            hours = int(elapsed // 3600)
+            minutes = int((elapsed % 3600) // 60)
+            seconds = int(elapsed % 60)
+            
+            time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+            self.time_var.set(time_str)
+            
+            self.root.after(1000, self.update_timer_display)
