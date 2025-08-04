@@ -239,3 +239,44 @@ class AutomationSuiteGUI:
         
         # Load initial stats after the interface is ready
         self.root.after(100, self.refresh_system_stats)
+        
+    def browse_organize_directory(self):
+        directory = filedialog.askdirectory()
+        if directory:
+            self.org_dir_var.set(directory)
+            
+    def browse_rename_directory(self):
+        directory = filedialog.askdirectory()
+        if directory:
+            self.rename_dir_var.set(directory)
+            
+    def organize_files(self):
+        directory = self.org_dir_var.get()
+        if not directory:
+            messagebox.showerror("Error", "Please select a directory first!")
+            return
+            
+        self.org_output.delete(1.0, tk.END)
+        self.status_var.set("Organizing files...")
+        
+        def organize_thread():
+            try:
+                # Capture output
+                import io
+                import sys
+                old_stdout = sys.stdout
+                sys.stdout = captured_output = io.StringIO()
+                
+                file_organizer.organize_files_by_extension(directory)
+                
+                sys.stdout = old_stdout
+                output = captured_output.getvalue()
+                
+                self.root.after(0, lambda: self.org_output.insert(tk.END, output))
+                self.root.after(0, lambda: self.status_var.set("Files organized successfully!"))
+                
+            except Exception as e:
+                self.root.after(0, lambda: self.org_output.insert(tk.END, f"Error: {str(e)}"))
+                self.root.after(0, lambda: self.status_var.set("Error occurred"))
+                
+        threading.Thread(target=organize_thread, daemon=True).start()
