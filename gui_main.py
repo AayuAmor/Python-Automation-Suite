@@ -348,3 +348,103 @@ class AutomationSuiteGUI:
                 self.root.after(0, lambda: self.status_var.set("Error during undo"))
                 
         threading.Thread(target=undo_thread, daemon=True).start()
+        
+    def undo_selected_session(self, event):
+        """Undo a selected session from the history list"""
+        selection = self.history_listbox.curselection()
+        if not selection:
+            messagebox.showwarning("No Selection", "Please select a session to undo.")
+            return
+        
+        session_index = len(batch_renamer.rename_history) - 1 - selection[0]  # Reverse index
+        
+        # Confirm undo
+        if messagebox.askyesno("Confirm Undo", 
+                              f"Are you sure you want to undo session #{session_index}?\n"
+                              "This will restore the original file names."):
+            
+            self.rename_output.delete(1.0, tk.END)
+            self.status_var.set(f"Undoing session #{session_index}...")
+            
+            def undo_thread():
+                try:
+                    import io
+                    import sys
+                    old_stdout = sys.stdout
+                    sys.stdout = captured_output = io.StringIO()
+                    
+                    success = batch_renamer.undo_rename_session(session_index)
+                    
+                    sys.stdout = old_stdout
+                    output = captured_output.getvalue()
+                    
+                    self.root.after(0, lambda: self.rename_output.insert(tk.END, output))
+                    if success:
+                        self.root.after(0, lambda: self.status_var.set("Session undo completed!"))
+                        self.root.after(100, self.refresh_rename_history)
+                    else:
+                        self.root.after(0, lambda: self.status_var.set("Session undo failed"))
+                    
+                except Exception as e:
+                    self.root.after(0, lambda: self.rename_output.insert(tk.END, f"Error: {str(e)}"))
+                    self.root.after(0, lambda: self.status_var.set("Error during undo"))
+                    
+            threading.Thread(target=undo_thread, daemon=True).start()
+        
+    def show_rename_history(self):
+        """Show detailed rename history in the output"""
+        self.rename_output.delete(1.0, tk.END)
+        self.status_var.set("Loading rename history...")
+        
+        def history_thread():
+            try:
+                import io
+                import sys
+                old_stdout = sys.stdout
+                sys.stdout = captured_output = io.StringIO()
+                
+                batch_renamer.list_rename_history()
+                
+                sys.stdout = old_stdout
+                output = captured_output.getvalue()
+                
+                self.root.after(0, lambda: self.rename_output.insert(tk.END, output))
+                self.root.after(0, lambda: self.status_var.set("History loaded"))
+                
+            except Exception as e:
+                self.root.after(0, lambda: self.rename_output.insert(tk.END, f"Error: {str(e)}"))
+                self.root.after(0, lambda: self.status_var.set("Error loading history"))
+                
+        threading.Thread(target=history_thread, daemon=True).start()
+        
+    def clear_rename_history(self):
+        """Clear all rename history after confirmation"""
+        if messagebox.askyesno("Confirm Clear", 
+                              "Are you sure you want to clear all rename history?\n"
+                              "This action cannot be undone."):
+            
+            batch_renamer.clear_rename_history()
+            self.refresh_rename_history()
+            self.rename_output.delete(1.0, tk.END)
+            self.rename_output.insert(tk.END, "✅ Rename history cleared.\n")
+            self.status_var.set("History cleared")
+            
+    def refresh_rename_history(self):
+        """Refresh the history listbox with current sessions"""
+        self.history_listbox.delete(0, tk.END)
+        
+        # Load current history
+        batch_renamer.load_rename_history()
+        
+        if not batch_renamer.rename_history:
+            self.history_listbox.insert(0, "No history")
+            return
+        
+        # Show most recent sessions first
+        for i, session in enumerate(reversed(batch_renamer.rename_history)):
+            timestamp = session['timestamp'][:19].replace('T', ' ')  # Format timestamp
+            prefix = session['prefix']
+            num_ops = len(session['operations'])
+            
+            entry = f"{timestamp} | {prefix} ({num_ops} files)"
+            self.history_listbox.insert(tk.END, entry)
