@@ -198,3 +198,6 @@ def clear_rename_history():
         print("✅ Rename history cleared.")
     except Exception as e:
         print(f"⚠️ Error clearing history file: {e}")
+
+# Load history on module import
+load_rename_history()
