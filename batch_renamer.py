@@ -164,3 +164,37 @@ def undo_rename_session(session_index):
         print("❌ No operations could be undone.")
     
     return success_count > 0
+
+def list_rename_history():
+    """List all rename sessions in history"""
+    if not rename_history:
+        print("📝 No rename history found.")
+        return []
+    
+    print("📋 Rename History:")
+    print("=" * 60)
+    
+    for i, session in enumerate(rename_history):
+        timestamp = session['timestamp']
+        directory = session['directory']
+        prefix = session['prefix']
+        num_operations = len(session['operations'])
+        
+        print(f"[{i}] {timestamp}")
+        print(f"    📁 Directory: {directory}")
+        print(f"    🏷️ Prefix: {prefix}")
+        print(f"    📊 Files renamed: {num_operations}")
+        print("-" * 60)
+    
+    return rename_history
+
+def clear_rename_history():
+    """Clear all rename history"""
+    global rename_history
+    rename_history = []
+    try:
+        if os.path.exists('rename_history.json'):
+            os.remove('rename_history.json')
+        print("✅ Rename history cleared.")
+    except Exception as e:
+        print(f"⚠️ Error clearing history file: {e}")
