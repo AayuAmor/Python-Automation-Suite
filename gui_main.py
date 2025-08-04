@@ -487,3 +487,49 @@ class AutomationSuiteGUI:
             self.time_var.set(time_str)
             
             self.root.after(1000, self.update_timer_display)
+            
+    def refresh_system_stats(self):
+        # Safety check to ensure status_var exists
+        if not hasattr(self, 'status_var'):
+            return
+            
+        self.stats_text.delete(1.0, tk.END)
+        self.status_var.set("Refreshing system stats...")
+        
+        def stats_thread():
+            try:
+                import io
+                import sys
+                old_stdout = sys.stdout
+                sys.stdout = captured_output = io.StringIO()
+                
+                system_monitor.show_system_stats()
+                
+                sys.stdout = old_stdout
+                output = captured_output.getvalue()
+                
+                self.root.after(0, lambda: self.stats_text.insert(tk.END, output))
+                self.root.after(0, lambda: self.status_var.set("System stats refreshed"))
+                
+            except Exception as e:
+                self.root.after(0, lambda: self.stats_text.insert(tk.END, f"Error: {str(e)}"))
+                self.root.after(0, lambda: self.status_var.set("Error getting stats"))
+                
+        threading.Thread(target=stats_thread, daemon=True).start()
+        
+    def toggle_auto_refresh(self):
+        if self.auto_refresh_var.get():
+            self.auto_refresh_stats()
+        
+    def auto_refresh_stats(self):
+        if self.auto_refresh_var.get():
+            self.refresh_system_stats()
+            self.root.after(5000, self.auto_refresh_stats)
+
+def main():
+    root = tk.Tk()
+    app = AutomationSuiteGUI(root)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
