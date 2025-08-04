@@ -66,3 +66,29 @@ class AutomationSuiteGUI:
         self.create_batch_renamer_tab()
         self.create_time_tracker_tab()
         self.create_system_monitor_tab()
+        
+    def create_file_organizer_tab(self):
+        # File Organizer Tab
+        organizer_frame = ttk.Frame(self.notebook)
+        self.notebook.add(organizer_frame, text="📁 File Organizer")
+        
+        ttk.Label(organizer_frame, text="Intelligent File Organizer", 
+                 style='Header.TLabel').pack(pady=10)
+        
+        ttk.Label(organizer_frame, text="Select a directory to organize files by extension:").pack(pady=5)
+        
+        # Directory selection frame
+        dir_frame = ttk.Frame(organizer_frame)
+        dir_frame.pack(pady=10, fill='x', padx=20)
+        
+        self.org_dir_var = tk.StringVar()
+        ttk.Entry(dir_frame, textvariable=self.org_dir_var, width=60).pack(side='left', padx=(0, 10))
+        ttk.Button(dir_frame, text="Browse", command=self.browse_organize_directory).pack(side='left')
+        
+        ttk.Button(organizer_frame, text="🗂️ Organize Files", 
+                  style='Custom.TButton',
+                  command=self.organize_files).pack(pady=20)
+        
+        # Output text area
+        self.org_output = scrolledtext.ScrolledText(organizer_frame, height=8, width=70)
+        self.org_output.pack(pady=10, padx=20, fill='both', expand=True)
