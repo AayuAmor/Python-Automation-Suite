@@ -92,3 +92,86 @@ class AutomationSuiteGUI:
         # Output text area
         self.org_output = scrolledtext.ScrolledText(organizer_frame, height=8, width=70)
         self.org_output.pack(pady=10, padx=20, fill='both', expand=True)
+        
+    def create_batch_renamer_tab(self):
+        # Batch Renamer Tab
+        renamer_frame = ttk.Frame(self.notebook)
+        self.notebook.add(renamer_frame, text="🔄 Batch Renamer")
+        
+        ttk.Label(renamer_frame, text="Batch File Renamer with Undo", 
+                 style='Header.TLabel').pack(pady=10)
+        
+        # Main controls frame
+        controls_frame = ttk.Frame(renamer_frame)
+        controls_frame.pack(fill='x', padx=20, pady=10)
+        
+        # Left side - Rename controls
+        rename_frame = ttk.LabelFrame(controls_frame, text="Rename Files", padding=10)
+        rename_frame.pack(side='left', fill='both', expand=True, padx=(0, 10))
+        
+        # Directory selection
+        ttk.Label(rename_frame, text="Select directory with files to rename:").pack(pady=5, anchor='w')
+        
+        dir_frame = ttk.Frame(rename_frame)
+        dir_frame.pack(pady=5, fill='x')
+        
+        self.rename_dir_var = tk.StringVar()
+        ttk.Entry(dir_frame, textvariable=self.rename_dir_var, width=40).pack(side='left', fill='x', expand=True, padx=(0, 5))
+        ttk.Button(dir_frame, text="Browse", command=self.browse_rename_directory).pack(side='right')
+        
+        # Prefix input
+        prefix_frame = ttk.Frame(rename_frame)
+        prefix_frame.pack(pady=5, fill='x')
+        
+        ttk.Label(prefix_frame, text="Prefix for renamed files:").pack(side='left')
+        self.prefix_var = tk.StringVar(value="file")
+        ttk.Entry(prefix_frame, textvariable=self.prefix_var, width=15).pack(side='right')
+        
+        ttk.Button(rename_frame, text="🏷️ Rename Files", 
+                  style='Custom.TButton',
+                  command=self.rename_files).pack(pady=10)
+        
+        # Right side - Undo controls
+        undo_frame = ttk.LabelFrame(controls_frame, text="Undo Operations", padding=10)
+        undo_frame.pack(side='right', fill='both', expand=True, padx=(10, 0))
+        
+        # Undo buttons
+        ttk.Button(undo_frame, text="↶ Undo Last", 
+                  style='Custom.TButton',
+                  command=self.undo_last_rename).pack(pady=5, fill='x')
+        
+        ttk.Button(undo_frame, text="📋 View History", 
+                  style='Custom.TButton',
+                  command=self.show_rename_history).pack(pady=5, fill='x')
+        
+        ttk.Button(undo_frame, text="🗑️ Clear History", 
+                  style='Custom.TButton',
+                  command=self.clear_rename_history).pack(pady=5, fill='x')
+        
+        # History listbox
+        ttk.Label(undo_frame, text="Recent Sessions:").pack(pady=(10, 5), anchor='w')
+        
+        history_frame = ttk.Frame(undo_frame)
+        history_frame.pack(fill='both', expand=True)
+        
+        self.history_listbox = tk.Listbox(history_frame, height=4, font=('Courier', 8))
+        history_scrollbar = ttk.Scrollbar(history_frame, orient='vertical', command=self.history_listbox.yview)
+        self.history_listbox.configure(yscrollcommand=history_scrollbar.set)
+        
+        self.history_listbox.pack(side='left', fill='both', expand=True)
+        history_scrollbar.pack(side='right', fill='y')
+        
+        # Bind double-click to undo specific session
+        self.history_listbox.bind('<Double-1>', self.undo_selected_session)
+        
+        ttk.Button(undo_frame, text="↶ Undo Selected", 
+                  style='Custom.TButton',
+                  command=lambda: self.undo_selected_session(None)).pack(pady=5, fill='x')
+        
+        # Output text area
+        ttk.Label(renamer_frame, text="Output Log:").pack(pady=(20, 5), padx=20, anchor='w')
+        self.rename_output = scrolledtext.ScrolledText(renamer_frame, height=8, width=70)
+        self.rename_output.pack(pady=5, padx=20, fill='both', expand=True)
+        
+        # Load initial history
+        self.refresh_rename_history()
