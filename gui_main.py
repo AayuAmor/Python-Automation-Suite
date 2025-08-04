@@ -280,3 +280,71 @@ class AutomationSuiteGUI:
                 self.root.after(0, lambda: self.status_var.set("Error occurred"))
                 
         threading.Thread(target=organize_thread, daemon=True).start()
+        
+    def rename_files(self):
+        directory = self.rename_dir_var.get()
+        prefix = self.prefix_var.get()
+        
+        if not directory:
+            messagebox.showerror("Error", "Please select a directory first!")
+            return
+        if not prefix:
+            messagebox.showerror("Error", "Please enter a prefix!")
+            return
+            
+        self.rename_output.delete(1.0, tk.END)
+        self.status_var.set("Renaming files...")
+        
+        def rename_thread():
+            try:
+                import io
+                import sys
+                old_stdout = sys.stdout
+                sys.stdout = captured_output = io.StringIO()
+                
+                batch_renamer.batch_rename(directory, prefix)
+                
+                sys.stdout = old_stdout
+                output = captured_output.getvalue()
+                
+                self.root.after(0, lambda: self.rename_output.insert(tk.END, output))
+                self.root.after(0, lambda: self.status_var.set("Files renamed successfully!"))
+                
+            except Exception as e:
+                self.root.after(0, lambda: self.rename_output.insert(tk.END, f"Error: {str(e)}"))
+                self.root.after(0, lambda: self.status_var.set("Error occurred"))
+                
+        threading.Thread(target=rename_thread, daemon=True).start()
+        
+        # Refresh history after rename
+        self.root.after(2000, self.refresh_rename_history)
+        
+    def undo_last_rename(self):
+        """Undo the most recent rename operation"""
+        self.rename_output.delete(1.0, tk.END)
+        self.status_var.set("Undoing last rename...")
+        
+        def undo_thread():
+            try:
+                import io
+                import sys
+                old_stdout = sys.stdout
+                sys.stdout = captured_output = io.StringIO()
+                
+                success = batch_renamer.undo_last_rename()
+                
+                sys.stdout = old_stdout
+                output = captured_output.getvalue()
+                
+                self.root.after(0, lambda: self.rename_output.insert(tk.END, output))
+                if success:
+                    self.root.after(0, lambda: self.status_var.set("Undo completed successfully!"))
+                    self.root.after(100, self.refresh_rename_history)
+                else:
+                    self.root.after(0, lambda: self.status_var.set("Undo failed or nothing to undo"))
+                
+            except Exception as e:
+                self.root.after(0, lambda: self.rename_output.insert(tk.END, f"Error: {str(e)}"))
+                self.root.after(0, lambda: self.status_var.set("Error during undo"))
+                
+        threading.Thread(target=undo_thread, daemon=True).start()
